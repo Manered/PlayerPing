@@ -79,7 +79,7 @@
         <dependency>
             <groupId>com.github.Manered</groupId>
             <artifactId>CmdAPI</artifactId>
-            <version>v1.0.0</version>
+            <version>v1.1.2</version>
         </dependency>
     </dependencies>
 </project>

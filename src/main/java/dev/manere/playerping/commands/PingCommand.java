@@ -1,57 +1,103 @@
 package dev.manere.playerping.commands;
 
-import dev.manere.cmdapi.commands.CommandExecutor;
-import dev.manere.cmdapi.utils.ColorUtils;
+import dev.manere.cmdapi.argument.Argument;
+import dev.manere.cmdapi.argument.ArgumentBuilder;
+import dev.manere.cmdapi.argument.TabCompletionBuilder;
+import dev.manere.cmdapi.util.ColorUtils;
+import dev.manere.playerping.PlayerPingPlugin;
 import org.bukkit.Bukkit;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.logging.Level;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 public class PingCommand implements CommandExecutor {
+
+
+    private final String permission;
+
+    private final PlayerPingPlugin plugin;
+
+    public PingCommand(PlayerPingPlugin plugin) {
+        String commandName = "ping";
+        this.permission = "ping.cmd";
+        this.plugin = plugin;
+
+        Argument<Player> playerArgument = new ArgumentBuilder<Player>("player")
+                .setDescription("Retrieves the ping / latency of a player.")
+                .setValidationRule(playerName -> playerName != null && !playerName.isEmpty())
+                .setPermissionCheck(sender -> sender.hasPermission(permission))
+                .build();
+
+        Argument<String> reloadArgument = new ArgumentBuilder<String>("reload")
+                .setDescription("Reloads the configuration files.")
+                .setPermissionCheck(sender -> sender.hasPermission("ping.reload"))
+                .build();
+    }
+
     @Override
-    public void execute(CommandSender sender, String[] args) {
+    public boolean onCommand(CommandSender sender, @NotNull Command cmd, @NotNull String label, String[] args) {
+        String noPermissionMsg = ColorUtils.translate(Objects.requireNonNull(plugin.getMessages().getString("no_permission.message")));
+        String usageMsg = ColorUtils.translate(Objects.requireNonNull(plugin.getMessages().getString("usage.message")));
+        String playerNotFoundMsg = ColorUtils.translate(Objects.requireNonNull(plugin.getMessages().getString("player_not_found.message")));
+        String pingSenderMsg = ColorUtils.translate(Objects.requireNonNull(plugin.getMessages().getString("ping_sender.message")));
+        String pingOtherMsg = ColorUtils.translate(Objects.requireNonNull(plugin.getMessages().getString("ping_other.message")));
+        String reloadMsg = ColorUtils.translate(Objects.requireNonNull(plugin.getMessages().getString("reload.message")));
+
+        if (!sender.hasPermission(permission)) {
+            sender.sendMessage(noPermissionMsg);
+            return true;
+        }
+
+        if (args.length > 1) {
+            sender.sendMessage(usageMsg);
+            return true;
+        }
+
         if (args.length == 0) {
-            // No player specified, assume the sender wants their own ping
-            if (sender instanceof Player) {
-                Player player = (Player) sender;
-                int ping = getPing(player);
-                String pingColor = getPingColor(ping);
-                sender.sendMessage(ColorUtils.translate("#00ff00&l⇄ &fPing&7: <ping>&7ms").replaceAll("<ping>", pingColor + ping));
-            } else {
-                sender.sendMessage(ColorUtils.translate("#ff0000Only players can execute this command."));
+            if (!(sender instanceof Player)) {
+                sender.sendMessage("This command can only be executed by players.");
+                return true;
             }
+
+            Player player = (Player) sender;
+            int ping = player.getPing();
+            String pingColor = getPingColor(ping);
+
+            player.sendMessage(pingSenderMsg
+                    .replaceAll("<ping>", pingColor + ping)
+                    .replaceAll("<player>", player.getName())
+            );
+        } else if (args[0].equalsIgnoreCase("reload") && sender.hasPermission("ping.reload")) {
+            plugin.reloadConfigFiles();
+            sender.sendMessage(reloadMsg);
         } else {
-            // Player name specified, get ping for that player
-            Player player = Bukkit.getPlayer(args[0]);
-            if (player != null) {
-                int ping = getPing(player);
-                String pingColor = getPingColor(ping);
-                sender.sendMessage(ColorUtils.translate("#00ff00&l⇄ #0077ff<player>'s &fPing&7: <ping>&7ms")
-                        .replaceAll("<player>", player.getName())
-                        .replaceAll("<ping>", pingColor + ping));
-            } else {
-                sender.sendMessage(ColorUtils.translate("#ff0000Player not found."));
+            String playerName = args[0];
+            Player player = Bukkit.getPlayer(playerName);
+
+            if (player == null) {
+                sender.sendMessage(playerNotFoundMsg
+                        .replaceAll("<player>", playerName)
+                );
+                return true;
             }
-        }
-    }
 
-    public static int getPing(Player player) {
-        try {
-            Method handle = player.getClass().getMethod("getHandle");
-            Object nmsHandle = handle.invoke(player);
-            Field pingField = nmsHandle.getClass().getField("ping");
-            return pingField.getInt(nmsHandle);
-        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
-                 | SecurityException | NoSuchFieldException e) {
-            Bukkit.getLogger().log(Level.SEVERE, "Exception while trying to get player ping.", e);
+            int ping = player.getPing();
+            String pingColor = getPingColor(ping);
+            sender.sendMessage(pingOtherMsg
+                    .replaceAll("<ping>", pingColor + ping)
+                    .replaceAll("<player>", player.getName())
+            );
         }
 
-        return -1;
+        return true;
     }
+
 
     public static String getPingColor(int ping) {
         if (ping <= 60) {
