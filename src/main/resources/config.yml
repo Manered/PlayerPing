@@ -1,0 +1,32 @@
+# This plugin uses the MiniMessage format: https://webui.advntr.dev/
+
+# This message is showed to the 
+# console whenever they try to
+# execute the ping command.
+sender_is_not_player: "<red>Only players can execute this command."
+
+# This message is showed to the
+# player whenever they try to
+# execute the ping command IMPROPERLY.
+# You can use <command> variable in this message.  
+usage: "<red>Correct Usage: /<command> [player]"
+
+# This message is showed to the
+# player whenever they try to
+# run the command with an argument
+# of value "PLAYER" with a player
+# that isn't online.
+# You can use <target> variable in this message.
+player_not_found: "<red>Player '<target>' not found!"
+
+# This message is showed to the
+# player whenever they successfully
+# run the command.  
+# You can use <target>, <target_smallfont>, <ping>, <raw_ping> variables in this message.
+ping_message: "<white><target>'s ping: <ping> ms"
+
+ping_colors:
+  below_or_60: "<#00ff00>"
+  below_or_120: "<#fff000>"
+  below_or_250: "<#ff5000>"
+  higher_than_250: "<#ff0000>"

@@ -1,17 +1,13 @@
 name: PlayerPingPlugin
 version: '${project.version}'
 main: dev.manere.playerping.PlayerPingPlugin
-api-version: 1.18
 authors: [Manere_]
 description: Simple /ping [player] command using my Command API.
 website: https://github.com/Manered/PlayerPing
 commands:
   ping:
-    description: Checks the ping of a player
-    permission: ping.cmd
+    permission: ping.command
 
 permissions:
-  ping.cmd:
+  ping.command:
     default: true
-  ping.reload:
-    default: op
